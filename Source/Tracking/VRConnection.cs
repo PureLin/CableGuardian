@@ -28,6 +28,10 @@ namespace CableGuardian
         /// <param name="yaw"></param>
         /// <returns></returns>
         public abstract bool GetHmdYaw(ref double yaw);        
+        public virtual bool GetHmdOrientation(ref double yaw,ref double pitch,ref double roll)
+        {
+            return true;
+        }        
         /// <summary>
         /// Returns true if connection was opened for listening to VR API.
         /// NOTE that this does not mean that the API connection is ok. Check Status for that.

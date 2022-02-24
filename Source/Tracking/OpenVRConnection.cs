@@ -23,18 +23,18 @@ namespace CableGuardian
                                      // Also, intervals below 15ms are never going to happen.
                                      // https://docs.microsoft.com/en-us/windows/win32/api/synchapi/nf-synchapi-sleep#remarks
                                      // But luckily I don't need accurate timing in this case, and the interval seems to be quick enough (whatever it actually is).
-        const int InitializationInterval = 2000;        
-        int InitAttemptCount = 0;        
+        const int InitializationInterval = 2000;
+        int InitAttemptCount = 0;
         const int InitAttemptLimit = 300; // (failed) OpenVR initialization attempt seems to leak about 0.1MB memory. Set a global limit (and request app restart)
         const int SleepTimeAfterQuit = 15000;
         int HMDUserInteractionBufferTime = 2000;
         EVRInitError LastOpenVRError = EVRInitError.None;
         CVRSystem VRSys = null;
         string LastExceptionMessage { get; set; }
-        string LastStopMessage { get; set; }       
+        string LastStopMessage { get; set; }
         VREvent_t NextVREvent = new VREvent_t();
-        TrackedDevicePose_t[] PoseArray;        
-        bool StopRequested = false;       
+        TrackedDevicePose_t[] PoseArray;
+        bool StopRequested = false;
         uint HmdIndex = 0;
         int _KeepAliveCounter = 0;
         int KeepAliveCounter { get { return _KeepAliveCounter; } set { _KeepAliveCounter = (_KeepAliveCounter >= 10000) ? 1 : value; } }
@@ -42,7 +42,7 @@ namespace CableGuardian
         // For OpenVR User interaction is true when HMD is mounted OR HMD is moving.
         // Note that there is also a 10s delay before User interaction returns to false. (e.g. User sets the HMD down on a desk)
         // (Side note: in Unity SteamVR plugin there's a way to read the prox sensor, but it seemed like a huge hassle to implement here)
-        bool HMDUserInteraction_buffered = false; 
+        bool HMDUserInteraction_buffered = false;
         bool HMDUserInteraction_previousReading = false;
         int HMDUserInteractionCounter = 0; // doesn't really make a difference for OpenVR, since we can't check the proximity sensor        
         int InitializationDivider = 0;
@@ -60,7 +60,7 @@ namespace CableGuardian
         {
             get { return _OpenVRConnStatus; }
             private set
-            {   
+            {
                 if (_OpenVRConnStatus != value || value == OpenVRConnectionStatus.Initializing) // to get refresh on initialization attempts
                 {
                     _OpenVRConnStatus = value;
@@ -76,8 +76,8 @@ namespace CableGuardian
                         Status = VRConnectionStatus.Opening;
                     }
                     else if (_OpenVRConnStatus == OpenVRConnectionStatus.NoHMD)
-                    {                        
-                        StatusMessage = $"OpenVR headset not found. Waiting {SleepTimeAfterQuit/1000}s before trying again." +
+                    {
+                        StatusMessage = $"OpenVR headset not found. Waiting {SleepTimeAfterQuit / 1000}s before trying again." +
                                         $"{Environment.NewLine}Last error: {OpenVR.GetStringForHmdError(LastOpenVRError)}";
                         Status = VRConnectionStatus.Waiting;
                     }
@@ -128,7 +128,7 @@ namespace CableGuardian
         public override int WaveOutDeviceNumber
         {
             get
-            {                
+            {
                 return -1; // windows default              
             }
         }
@@ -158,10 +158,10 @@ namespace CableGuardian
                 StopRequested = false;
                 WorkerFailed = false;
                 Worker.RunWorkerAsync();
-                
-                if (!WorkerManager.IsBusy)                
-                    WorkerManager.RunWorkerAsync();                
-                
+
+                if (!WorkerManager.IsBusy)
+                    WorkerManager.RunWorkerAsync();
+
                 return true;
             }
             else
@@ -173,7 +173,7 @@ namespace CableGuardian
         protected override void CloseImplementation()
         {
             LastStopMessage = "Close was requested.";
-            StopRequested = true;            
+            StopRequested = true;
         }
 
         void Stop(bool initLimitReached = false)
@@ -193,9 +193,9 @@ namespace CableGuardian
         }
 
         void DoManagementWork(object sender, DoWorkEventArgs e)
-        {           
+        {
             while (!StopFlag)
-            {   
+            {
                 if (WorkerFailed)
                 {
                     // wait until the worker method has completed
@@ -205,12 +205,12 @@ namespace CableGuardian
                         safety++;
                         Thread.Sleep(100);
                     }
-                                                
+
                     WorkerManager.ReportProgress(0);
                 }
 
                 Thread.Sleep(2000);
-            }           
+            }
         }
         private void WorkerManager_ProgressChanged(object sender, ProgressChangedEventArgs e)
         {
@@ -221,7 +221,7 @@ namespace CableGuardian
 
         void DoWork(object sender, DoWorkEventArgs e)
         {
-            if (!StopFlag)            
+            if (!StopFlag)
                 OpenVRConnStatus = OpenVRConnectionStatus.Initializing;
 
             try
@@ -251,11 +251,11 @@ namespace CableGuardian
                 Stop();
                 return;
             }
-            
-            if (VRSys == null) 
+
+            if (VRSys == null)
             {
                 if (KeepAliveCounter % InitializationDivider != 0) // do not attempt initialization on every loop.
-                    return; 
+                    return;
 
                 // ***** INITIALIZATION ******
 
@@ -277,7 +277,7 @@ namespace CableGuardian
                     {
                         if (LastOpenVRError == EVRInitError.Init_HmdNotFound || LastOpenVRError == EVRInitError.Init_HmdNotFoundPresenceFailed)
                         {
-                            OpenVRConnStatus = OpenVRConnectionStatus.NoHMD;                                                             
+                            OpenVRConnStatus = OpenVRConnectionStatus.NoHMD;
                             Thread.Sleep(SleepTimeAfterQuit);
                         }
                         return;
@@ -289,7 +289,7 @@ namespace CableGuardian
                     for (uint i = 0; i < OpenVR.k_unMaxTrackedDeviceCount; i++)
                     {
                         if (VRSys.IsTrackedDeviceConnected(i))
-                        {                            
+                        {
                             ETrackedDeviceClass c = VRSys.GetTrackedDeviceClass(i);
                             if (c == ETrackedDeviceClass.HMD)
                             {
@@ -301,15 +301,15 @@ namespace CableGuardian
                     }
 
                     if (!hmdFound‬)
-                    {                        
+                    {
                         EndCurrentSession();
-                        OpenVRConnStatus = OpenVRConnectionStatus.NoHMD;                         
+                        OpenVRConnStatus = OpenVRConnectionStatus.NoHMD;
                         Thread.Sleep(SleepTimeAfterQuit);
 
                         return;
                     }
 
-                    PoseArray = new TrackedDevicePose_t[HmdIndex + 1]; 
+                    PoseArray = new TrackedDevicePose_t[HmdIndex + 1];
                     for (int i = 0; i < PoseArray.Length; i++)
                     {
                         PoseArray[i] = new TrackedDevicePose_t();
@@ -349,10 +349,10 @@ namespace CableGuardian
                     EndCurrentSession();
                     OpenVRConnStatus = OpenVRConnectionStatus.SteamVRQuit; // again to get correct status (changed in EndCurrentSession())
                     // a good sleep before starting to poll steamvr -process again
-                    Thread.Sleep(SleepTimeAfterQuit);                     
+                    Thread.Sleep(SleepTimeAfterQuit);
                 }
                 else
-                {   
+                {
                     bool interaction = (VRSys.GetTrackedDeviceActivityLevel(HmdIndex) == EDeviceActivityLevel.k_EDeviceActivityLevel_UserInteraction);
                     if (interaction == HMDUserInteraction_previousReading)
                         HMDUserInteractionCounter++;
@@ -363,7 +363,7 @@ namespace CableGuardian
 
                     // some buffer to filter out false flags (and conveniently some delay for notifications)                                                                                
                     // ... although false flags are not really possible the way OpenVR currently works
-                    if (HMDUserInteractionCounter > HMDUserInteractionDivider) 
+                    if (HMDUserInteractionCounter > HMDUserInteractionDivider)
                     {
                         if (HMDUserInteraction_buffered != interaction)
                         {
@@ -377,7 +377,7 @@ namespace CableGuardian
                         HMDUserInteractionCounter = 0;
                     }
                 }
-            }    
+            }
         }
 
         void EndCurrentSession()
@@ -389,8 +389,8 @@ namespace CableGuardian
                     // Note that there seems to be a memory leak in openvr_api.
                     // Calling shutdown apparently does not release all resources...
                     // ... that were loaded with OpenVR.Init()
-                    OpenVR.Shutdown();                    
-                }                
+                    OpenVR.Shutdown();
+                }
             }
             catch (Exception e)
             {
@@ -422,15 +422,28 @@ namespace CableGuardian
 
         public override bool GetHmdYaw(ref double yaw)
         {
-            if (OpenVRConnStatus != OpenVRConnectionStatus.AllOK)                            
-                return false;            
+            if (OpenVRConnStatus != OpenVRConnectionStatus.AllOK)
+                return false;
 
             VRSys.GetDeviceToAbsoluteTrackingPose(ETrackingUniverseOrigin.TrackingUniverseStanding, 0, PoseArray);
-            if (!PoseArray[HmdIndex].bPoseIsValid)            
-                return false;            
-            
+            if (!PoseArray[HmdIndex].bPoseIsValid)
+                return false;
+
             yaw = GetYawFromOrientation(GetOrientation(PoseArray[HmdIndex].mDeviceToAbsoluteTracking));
-            return true;            
+            return true;
+        }
+
+        public override bool GetHmdOrientation(ref double yaw, ref double pitch, ref double roll)
+        {
+            if (OpenVRConnStatus != OpenVRConnectionStatus.AllOK)
+                return false;
+
+            VRSys.GetDeviceToAbsoluteTrackingPose(ETrackingUniverseOrigin.TrackingUniverseStanding, 0, PoseArray);
+            if (!PoseArray[HmdIndex].bPoseIsValid)
+                return false;
+            HmdQuaternion_t q = GetOrientation(PoseArray[HmdIndex].mDeviceToAbsoluteTracking);
+            GetYawPitchRollFromOrientation(q,ref yaw,ref pitch,ref roll);
+            return true;
         }
 
         public void SetSteamVRAutoStart(bool autoStart)
@@ -481,7 +494,7 @@ namespace CableGuardian
             q.y = CopySign(q.y, matrix.m2 - matrix.m8);
             q.z = CopySign(q.z, matrix.m4 - matrix.m1);
 
-            return q; 
+            return q;
         }
 
         double GetYawFromOrientation(HmdQuaternion_t orientation)
@@ -497,10 +510,10 @@ namespace CableGuardian
             double z = orientation.z;
             double w = orientation.w;
 
-            double sqx = x*x;
-            double sqy = y*y;
-            double sqz = z*z;
-            double sqw = w*w;
+            double sqx = x * x;
+            double sqy = y * y;
+            double sqz = z * z;
+            double sqw = w * w;
             double unit = sqx + sqy + sqz + sqw; // if normalised is one, otherwise is correction factor            
 
             // check singularity:
@@ -517,6 +530,45 @@ namespace CableGuardian
             return Math.Atan2(2 * y * w - 2 * x * z, 1 - 2 * y * y - 2 * z * z);
         }
 
+        void GetYawPitchRollFromOrientation(HmdQuaternion_t orientation, ref double yaw, ref double pitch, ref double roll)
+        {
+            // don't really understand math well enough to know whether the quaternion from GetOrientation(HmdMatrix34_t) is normalized or not.
+            // --> let's assume it's not. --> some additional calculation (although, in case of Yaw, only seems to affect the singularities (rare, if ever))
+
+            // Conversion formula from:
+            // http://www.euclideanspace.com/maths/geometry/rotations/conversions/quaternionToEuler/index.htm
+
+            double x = orientation.x;
+            double y = orientation.y;
+            double z = orientation.z;
+            double w = orientation.w;
+
+            double sqx = x * x;
+            double sqy = y * y;
+            double sqz = z * z;
+            double sqw = w * w;
+            double unit = sqx + sqy + sqz + sqw; // if normalised is one, otherwise is correction factor            
+
+            // check singularity:
+            double test = x * y + z * w;
+            if (test > 0.499 * unit)
+            { // singularity at north pole
+                yaw = 2 * Math.Atan2(x, w);
+                pitch = 0;
+                roll = Math.PI / 2;
+            }
+            if (test < -0.499 * unit)
+            { // singularity at south pole
+                yaw = -2 * Math.Atan2(x, w);
+                pitch = 0;
+                roll = -Math.PI / 2;
+            }
+
+            yaw = Math.Atan2(2 * y * w - 2 * x * z, 1 - 2 * y * y - 2 * z * z);
+            pitch = Math.Atan2(2 * x * w - 2 * y * z, 1 - 2 * x * x - 2 * z * z);
+            roll = Math.Asin(2 * test);
+        }
+
         double CopySign(double a, double b)
         {
             if (a >= 0 && b < 0)
@@ -526,7 +578,7 @@ namespace CableGuardian
             else if (b < 0)
                 return a;
             else
-                return a * -1;            
+                return a * -1;
         }
     }
 }

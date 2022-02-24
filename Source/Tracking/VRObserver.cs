@@ -15,10 +15,14 @@ namespace CableGuardian
         /// (range from -PI to +PI) (sign denotes direction from center - left or right depending on coordinate system)
         /// </summary>
         public double HmdYaw { get; }
+        public double HmdPitch { get; }
+        public double HmdRoll { get; }
         public bool HmdYawChanged { get; }
-        public VRObserverEventArgs(double hmdYaw, bool hmdYawChanged)
+        public VRObserverEventArgs(double hmdYaw, double hmdPitch, double hmdRoll, bool hmdYawChanged)
         {
             HmdYaw = hmdYaw;
+            HmdPitch = hmdPitch;
+            HmdRoll = hmdRoll;
             HmdYawChanged = hmdYawChanged;
         }
     }
@@ -29,7 +33,9 @@ namespace CableGuardian
         public event EventHandler<EventArgs> InvalidYawReceived;
 
         VRConnection VR;
-        double HmdYaw;        
+        double HmdYaw;
+        double HmdPitch;
+        double HmdRoll;
 
         BackgroundWorker Worker = new BackgroundWorker();
         bool StopFlag = false;
@@ -48,10 +54,10 @@ namespace CableGuardian
         {
             VR = vr ?? throw new Exception("null VR connection.");
             PollInterval = pollInterval;
-            
+
             Worker.DoWork += DoWork;
             Worker.ProgressChanged += Worker_ProgressChanged;
-            Worker.WorkerReportsProgress = true;                        
+            Worker.WorkerReportsProgress = true;
         }
 
         public void SetVRConnection(VRConnection vr)
@@ -77,7 +83,7 @@ namespace CableGuardian
         {
             StopFlag = true;
         }
-        
+
 
         double PreviousYaw = 0;
         const int SameYawThreshold = 5;
@@ -92,7 +98,7 @@ namespace CableGuardian
         {
             while (StopFlag == false)
             {
-                if (VR.GetHmdYaw(ref HmdYaw))
+                if (VR.GetHmdOrientation(ref HmdYaw,ref HmdPitch, ref HmdRoll))
                 {
                     if (HmdYaw == PreviousYaw)
                     {
@@ -117,17 +123,17 @@ namespace CableGuardian
                     else
                         Worker.ReportProgress(2, EventArgs.Empty);
                 }
-               
+
                 Thread.Sleep(PollInterval);
-            }            
+            }
         }
 
         private void Worker_ProgressChanged(object sender, ProgressChangedEventArgs e)
         {
             if (e.ProgressPercentage == 0)
-                ValidYawReceived?.Invoke(this, new VRObserverEventArgs(HmdYaw, true));
+                ValidYawReceived?.Invoke(this, new VRObserverEventArgs(HmdYaw, HmdPitch, HmdRoll, true));
             else if (e.ProgressPercentage == 1)
-                ValidYawReceived?.Invoke(this, new VRObserverEventArgs(HmdYaw, false));
+                ValidYawReceived?.Invoke(this, new VRObserverEventArgs(HmdYaw, HmdPitch, HmdRoll, false));
             else if (e.ProgressPercentage == 2)
                 InvalidYawReceived?.Invoke(this, EventArgs.Empty);
         }
