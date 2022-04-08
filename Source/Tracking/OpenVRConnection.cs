@@ -433,7 +433,7 @@ namespace CableGuardian
             return true;
         }
 
-        public override bool GetHmdOrientation(ref double yaw, ref double pitch, ref double roll)
+        public override bool GetHmdOrientationAndPosition(ref HmdRotation_t roration, ref HmdPosition_t position)
         {
             if (OpenVRConnStatus != OpenVRConnectionStatus.AllOK)
                 return false;
@@ -441,8 +441,10 @@ namespace CableGuardian
             VRSys.GetDeviceToAbsoluteTrackingPose(ETrackingUniverseOrigin.TrackingUniverseStanding, 0, PoseArray);
             if (!PoseArray[HmdIndex].bPoseIsValid)
                 return false;
-            HmdQuaternion_t q = GetOrientation(PoseArray[HmdIndex].mDeviceToAbsoluteTracking);
-            GetYawPitchRollFromOrientation(q,ref yaw,ref pitch,ref roll);
+            var hmdTracking = PoseArray[HmdIndex].mDeviceToAbsoluteTracking;
+            HmdQuaternion_t q = GetOrientation(hmdTracking);
+            GetYawPitchRollFromOrientation(q, ref roration);
+            GetPosition(hmdTracking, ref position);
             return true;
         }
 
@@ -496,6 +498,12 @@ namespace CableGuardian
 
             return q;
         }
+        void GetPosition(HmdMatrix34_t matrix,ref HmdPosition_t position)
+        {
+            position.y = matrix.m3;
+            position.z = matrix.m7;
+            position.x = matrix.m11;
+        }
 
         double GetYawFromOrientation(HmdQuaternion_t orientation)
         {
@@ -530,7 +538,7 @@ namespace CableGuardian
             return Math.Atan2(2 * y * w - 2 * x * z, 1 - 2 * y * y - 2 * z * z);
         }
 
-        void GetYawPitchRollFromOrientation(HmdQuaternion_t orientation, ref double yaw, ref double pitch, ref double roll)
+        void GetYawPitchRollFromOrientation(HmdQuaternion_t orientation,ref HmdRotation_t roration)
         {
             // don't really understand math well enough to know whether the quaternion from GetOrientation(HmdMatrix34_t) is normalized or not.
             // --> let's assume it's not. --> some additional calculation (although, in case of Yaw, only seems to affect the singularities (rare, if ever))
@@ -553,20 +561,20 @@ namespace CableGuardian
             double test = x * y + z * w;
             if (test > 0.499 * unit)
             { // singularity at north pole
-                yaw = 2 * Math.Atan2(x, w);
-                pitch = 0;
-                roll = Math.PI / 2;
+                roration.yaw = 2 * Math.Atan2(x, w);
+                roration.pitch = 0;
+                roration.roll = Math.PI / 2;
             }
             if (test < -0.499 * unit)
             { // singularity at south pole
-                yaw = -2 * Math.Atan2(x, w);
-                pitch = 0;
-                roll = -Math.PI / 2;
+                roration.yaw = -2 * Math.Atan2(x, w);
+                roration.pitch = 0;
+                roration.roll = -Math.PI / 2;
             }
 
-            yaw = Math.Atan2(2 * y * w - 2 * x * z, 1 - 2 * y * y - 2 * z * z);
-            pitch = Math.Atan2(2 * x * w - 2 * y * z, 1 - 2 * x * x - 2 * z * z);
-            roll = Math.Asin(2 * test);
+            roration.yaw = Math.Atan2(2 * y * w - 2 * x * z, 1 - 2 * y * y - 2 * z * z);
+            roration.pitch = Math.Atan2(2 * x * w - 2 * y * z, 1 - 2 * x * x - 2 * z * z);
+            roration.roll = Math.Asin(2 * test);
         }
 
         double CopySign(double a, double b)

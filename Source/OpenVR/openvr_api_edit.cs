@@ -5333,6 +5333,18 @@ public enum EVRDebugError
 	public double v1;
 	public double v2;
 }
+[StructLayout(LayoutKind.Sequential)] public struct HmdRotation_t
+{
+		public double yaw; //double[3]
+		public double pitch;
+		public double roll;
+}
+[StructLayout(LayoutKind.Sequential)] public struct HmdPosition_t
+{
+		public double x; //double[3]
+		public double y;
+		public double z;
+}
 [StructLayout(LayoutKind.Sequential)] public struct HmdVector2_t
 {
 	public float v0; //float[2]

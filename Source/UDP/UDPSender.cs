@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Net;
 using System.Net.Sockets;
+using Valve.VR;
 
 namespace CableGuardian
 {
@@ -13,6 +14,8 @@ namespace CableGuardian
 
         private static IPEndPoint localIpep = null;
         private static IPEndPoint remoteIpep = null;
+        private static double[] values = new double[6];
+        private static double positionZoom = 1.5;
 
         static UDPSender()
         {
@@ -30,10 +33,9 @@ namespace CableGuardian
         {
             try
             {
-                double[] values = new double[6];
                 values[3] = (yaw / Math.PI * 180) * -1;
                 values[4] = (pitch / Math.PI * 180);
-                values[5] = (roll / Math.PI * 180) * 1.5 ;
+                values[5] = (roll / Math.PI * 180) * 1.5;
                 //Console.WriteLine($"{values[3]},{values[4]},{values[5]}");
                 byte[] sendbytes = GetBytesAlt(values);
                 udpcSend.Send(sendbytes, sendbytes.Length, remoteIpep);
@@ -48,5 +50,21 @@ namespace CableGuardian
             return result;
         }
 
+        internal static void Send(HmdRotation_t rotation, HmdPosition_t position)
+        {
+            try
+            {
+                values[0] = position.x / positionZoom * -1;
+                values[1] = position.y / positionZoom * -1;
+                values[2] = position.z / positionZoom - 0.9;
+                values[3] = (rotation.yaw / Math.PI * 180) * -1;
+                values[4] = (rotation.pitch / Math.PI * 180);
+                values[5] = (rotation.roll / Math.PI * 180) * 1.5;
+                Console.WriteLine($"{values[0]},{values[1]},{values[2]}");
+                byte[] sendbytes = GetBytesAlt(values);
+                udpcSend.Send(sendbytes, sendbytes.Length, remoteIpep);
+            }
+            catch { }
+        }
     }
 }

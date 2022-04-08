@@ -142,7 +142,7 @@ namespace CableGuardian
 
         void OnHmdStateRefreshed(object sender, VRObserverEventArgs e)
         {
-            UpdateRotation(e.HmdYaw * LeftRightMultiplier,e.HmdPitch,e.HmdRoll);
+            UpdateRotation(e.Yaw * LeftRightMultiplier);
         }
 
         /// <summary>
@@ -180,10 +180,9 @@ namespace CableGuardian
         /// NOTE, the angular difference between the last two Yaw values must always be below 180 degrees for this to work!
         /// </summary>
         /// <param name="newYawValue"></param>
-        void UpdateRotation(double newYawValue,double newPitch,double newRoll)
+        void UpdateRotation(double newYawValue)
         {
 
-            UDPSender.SendYaw(newYawValue,newPitch,newRoll);
             if (RotationUpdateInProgress)
                 return;
 

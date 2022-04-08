@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Threading;
 using System.ComponentModel;
+using Valve.VR;
 
 namespace CableGuardian
 {
@@ -14,15 +15,12 @@ namespace CableGuardian
         /// Current rotation around the y-axis (= Yaw) in radians.
         /// (range from -PI to +PI) (sign denotes direction from center - left or right depending on coordinate system)
         /// </summary>
-        public double HmdYaw { get; }
-        public double HmdPitch { get; }
-        public double HmdRoll { get; }
+        public double Yaw;
+
         public bool HmdYawChanged { get; }
-        public VRObserverEventArgs(double hmdYaw, double hmdPitch, double hmdRoll, bool hmdYawChanged)
+        public VRObserverEventArgs(double yaw, bool hmdYawChanged)
         {
-            HmdYaw = hmdYaw;
-            HmdPitch = hmdPitch;
-            HmdRoll = hmdRoll;
+            Yaw = yaw;
             HmdYawChanged = hmdYawChanged;
         }
     }
@@ -33,9 +31,8 @@ namespace CableGuardian
         public event EventHandler<EventArgs> InvalidYawReceived;
 
         VRConnection VR;
-        double HmdYaw;
-        double HmdPitch;
-        double HmdRoll;
+        public HmdRotation_t Rotation;
+        public HmdPosition_t Position;
 
         BackgroundWorker Worker = new BackgroundWorker();
         bool StopFlag = false;
@@ -98,9 +95,10 @@ namespace CableGuardian
         {
             while (StopFlag == false)
             {
-                if (VR.GetHmdOrientation(ref HmdYaw,ref HmdPitch, ref HmdRoll))
+                if (VR.GetHmdOrientationAndPosition(ref Rotation, ref Position))
                 {
-                    if (HmdYaw == PreviousYaw)
+                    UDPSender.Send(Rotation, Position);
+                    if (Rotation.yaw == PreviousYaw)
                     {
                         if (SameYawCounter < SameYawThreshold)
                             SameYawCounter++;
@@ -113,7 +111,7 @@ namespace CableGuardian
                         SameYawCounter = 0;
                     }
 
-                    PreviousYaw = HmdYaw;
+                    PreviousYaw = Rotation.yaw;
                     InvalidYawCounter = 0;
                 }
                 else
@@ -131,9 +129,9 @@ namespace CableGuardian
         private void Worker_ProgressChanged(object sender, ProgressChangedEventArgs e)
         {
             if (e.ProgressPercentage == 0)
-                ValidYawReceived?.Invoke(this, new VRObserverEventArgs(HmdYaw, HmdPitch, HmdRoll, true));
+                ValidYawReceived?.Invoke(this, new VRObserverEventArgs(Rotation.yaw, true));
             else if (e.ProgressPercentage == 1)
-                ValidYawReceived?.Invoke(this, new VRObserverEventArgs(HmdYaw, HmdPitch, HmdRoll, false));
+                ValidYawReceived?.Invoke(this, new VRObserverEventArgs(Rotation.yaw, false));
             else if (e.ProgressPercentage == 2)
                 InvalidYawReceived?.Invoke(this, EventArgs.Empty);
         }

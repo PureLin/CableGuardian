@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Valve.VR;
 
 namespace CableGuardian
 {
@@ -28,9 +29,9 @@ namespace CableGuardian
         /// <param name="yaw"></param>
         /// <returns></returns>
         public abstract bool GetHmdYaw(ref double yaw);        
-        public virtual bool GetHmdOrientation(ref double yaw,ref double pitch,ref double roll)
+        public virtual bool GetHmdOrientationAndPosition(ref HmdRotation_t roration,ref HmdPosition_t position)
         {
-            return true;
+            return false;
         }        
         /// <summary>
         /// Returns true if connection was opened for listening to VR API.
